@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Incoterms Assistant Demo - 2020 Rules</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8; --secondary: #10b981;
+            --warning: #f59e0b; --danger: #ef4444; --seller: #10b981; --buyer: #3b82f6;
+            --dark: #1f2937; --gray: #6b7280; --gray-light: #f3f4f6;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1); --radius: 12px; --radius-sm: 8px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f9ff; color: var(--dark); padding: 16px; }
+        body::before {
+            content: 'DEMO VERSION - PDF/Export Disabled';
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-35deg);
+            font-size: 3.5vw; color: rgba(239,68,68,0.08); white-space: nowrap;
+            pointer-events: none; z-index: 9998; font-weight: 900; user-select: none;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .upgrade-banner {
+            background: #fef3c7; border: 2px solid var(--warning); border-radius: var(--radius);
+            padding: 10px 20px; margin-bottom: 16px; text-align: center; font-weight: 600; font-size: 0.85rem;
+        }
+        .upgrade-banner a { color: var(--primary-dark); font-weight: 700; }
+        header {
+            background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 20px 24px; margin-bottom: 20px; display: flex;
+            justify-content: space-between; align-items: center; border-left: 5px solid var(--primary);
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon {
+            width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1.4rem;
+        }
+        .logo-text h1 { font-size: 1.3rem; font-weight: 800; }
+        .logo-text h1 .demo-badge { background: var(--warning); color: white; font-size: 0.55rem; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+        .main-tabs { display: flex; background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .main-tab {
+            flex: 1; padding: 12px 18px; text-align: center; cursor: pointer; font-weight: 600;
+            border-radius: var(--radius-sm); transition: all 0.3s; color: var(--gray);
+            min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.85rem;
+        }
+        .main-tab:hover { color: var(--primary); background: rgba(37,99,235,0.1); }
+        .main-tab.active { background: var(--primary); color: white; box-shadow: var(--shadow); }
+        .main-content { display: none; animation: fadeIn 0.4s ease; }
+        .main-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .content-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; }
+        .card-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid var(--gray-light); }
+        .card-title i { color: var(--primary); }
+        .btn {
+            padding: 10px 20px; border: none; border-radius: var(--radius-sm); cursor: pointer;
+            font-weight: 600; font-size: 0.9rem; transition: all 0.3s; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+        .btn-pro { background: linear-gradient(135deg, #f59e0b, #d97706); opacity: 0.7; cursor: not-allowed; }
+        .pro-badge { background: rgba(255,255,255,0.3); font-size: 0.6rem; padding: 2px 6px; border-radius: 6px; font-weight: 700; text-transform: uppercase; margin-left: 4px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-weight: 600; font-size: 0.85rem; }
+        .form-input, .form-select { padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: var(--radius-sm); font-size: 0.9rem; outline: none; transition: all 0.3s; background: white; }
+        .form-input:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+        .result-card {
+            background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+            border-top: 4px solid var(--primary); text-align: center; cursor: pointer; transition: all 0.3s;
+        }
+        .result-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+        .result-card.selected { border-top-color: var(--secondary); }
+        .result-code { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+        .result-price { font-size: 1.3rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
+        .seller-badge { background: rgba(16,185,129,0.1); color: var(--seller); padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .buyer-badge { background: rgba(59,130,246,0.1); color: var(--buyer); padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .wizard-step { display: none; animation: fadeIn 0.4s ease; }
+        .wizard-step.active { display: block; }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .option-card {
+            background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+            cursor: pointer; transition: all 0.3s; border: 2px solid transparent; text-align: center;
+        }
+        .option-card:hover { transform: translateY(-3px); }
+        .option-card.selected { border-color: var(--primary); background: rgba(37,99,235,0.03); }
+        .option-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; margin: 0 auto 10px; }
+        .option-icon.sea { background: #0ea5e9; }
+        .option-icon.air { background: #8b5cf6; }
+        .option-icon.road { background: #f59e0b; }
+        .option-icon.all { background: #ec4899; }
+        .option-title { font-weight: 700; margin-bottom: 6px; }
+        .option-description { color: var(--gray); font-size: 0.85rem; }
+        .recommendation-result { text-align: center; padding: 30px; display: none; }
+        .recommendation-result.active { display: block; }
+        .recommendation-icon {
+            width: 80px; height: 80px; background: linear-gradient(135deg, var(--secondary), #34d399);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 2rem; margin: 0 auto 16px;
+        }
+        .recommendation-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; }
+        .recommendation-reasons { background: var(--gray-light); border-radius: var(--radius); padding: 20px; margin-top: 20px; text-align: left; }
+        .reason-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+        .reason-icon { color: var(--secondary); }
+        .incoterms-reference { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .incoterm-detail-card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+        .detail-code { width: 60px; height: 60px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.3rem; margin-bottom: 12px; }
+        .detail-code.sea { background: #0ea5e9; }
+        .detail-code.air { background: #8b5cf6; }
+        .detail-code.all { background: #ec4899; }
+        .chart-responsibility { padding: 4px 10px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; }
+        .chart-responsibility.seller { background: rgba(16,185,129,0.1); color: var(--seller); }
+        .chart-responsibility.buyer { background: rgba(59,130,246,0.1); color: var(--buyer); }
+        .chart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-light); }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 14px 22px; border-radius: var(--radius); color: white; font-weight: 600; box-shadow: var(--shadow-lg); z-index: 1000; animation: slideIn 0.3s ease; }
+        .toast.success { background: var(--secondary); }
+        .toast.warning { background: var(--warning); }
+        @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 12px; text-align: center; }
+            .main-tab { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="upgrade-banner">
+            ⚠️ <strong>DEMO MODE:</strong> 6 of 11 Incoterms shown. PDF/Export disabled. 
+            <a href="https://digitalyar.company/product/spa17-smart-incoterms-assistant/" target="_blank">Upgrade to Full Version →</a>
+        </div>
+
+        <header>
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-ship"></i></div>
+                <div class="logo-text">
+                    <h1>Smart Incoterms Assistant <span class="demo-badge">DEMO</span></h1>
+                    <p style="color:var(--gray);font-size:0.8rem;">Intelligent Route Selection & Price Calculator (2020 Rules)</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-tabs">
+            <div class="main-tab active" data-tab="calculator"><i class="fas fa-calculator"></i> Calculator</div>
+            <div class="main-tab" data-tab="wizard"><i class="fas fa-robot"></i> Consultant</div>
+            <div class="main-tab" data-tab="reference"><i class="fas fa-book"></i> Reference</div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="main-content active" id="calculator-tab">
+            <div class="content-card">
+                <h2 class="card-title"><i class="fas fa-calculator"></i> Price Calculator (Demo: 6 Incoterms)</h2>
+                <div class="form-grid">
+                    <div class="form-group"><label>Factory Price ($)</label><input type="number" id="factoryPrice" class="form-input" value="10000" min="0" step="100"></div>
+                    <div class="form-group"><label>Packaging ($)</label><input type="range" id="packagingCost" class="form-input" min="0" max="1000" value="200" oninput="document.getElementById('packagingCostText').textContent=this.value;calc()"><span id="packagingCostText">200</span></div>
+                    <div class="form-group"><label>Inland Transport ($)</label><input type="range" id="inlandTransport" class="form-input" min="0" max="2000" value="100" oninput="document.getElementById('inlandTransportText').textContent=this.value;calc()"><span id="inlandTransportText">100</span></div>
+                    <div class="form-group"><label>Main Transport ($)</label><input type="range" id="mainTransport" class="form-input" min="0" max="5000" value="1000" oninput="document.getElementById('mainTransportText').textContent=this.value;calc()"><span id="mainTransportText">1000</span></div>
+                    <div class="form-group"><label>Insurance ($)</label><input type="range" id="insuranceCost" class="form-input" min="0" max="500" value="50" oninput="document.getElementById('insuranceCostText').textContent=this.value;calc()"><span id="insuranceCostText">50</span></div>
+                    <div class="form-group"><label>Export Customs ($)</label><input type="range" id="exportCustoms" class="form-input" min="0" max="300" value="30" oninput="document.getElementById('exportCustomsText').textContent=this.value;calc()"><span id="exportCustomsText">30</span></div>
+                    <div class="form-group"><label>Import Customs ($)</label><input type="range" id="importCustoms" class="form-input" min="0" max="500" value="70" oninput="document.getElementById('importCustomsText').textContent=this.value;calc()"><span id="importCustomsText">70</span></div>
+                    <div class="form-group"><label>Transport Mode</label><select id="transportMode" class="form-select" onchange="calc()"><option value="sea">Sea</option><option value="air">Air</option><option value="all">Any/Multimodal</option></select></div>
+                </div>
+                <div class="results-grid" id="priceResults"></div>
+                <p style="font-size:0.8rem;color:var(--warning);margin-top:14px;">📥 PDF Export is a Pro feature. <a href="https://digitalyar.company/product/spa17-smart-incoterms-assistant/" target="_blank" style="color:var(--primary);">Upgrade →</a></p>
+            </div>
+        </div>
+
+        <!-- Wizard -->
+        <div class="main-content" id="wizard-tab">
+            <div class="content-card">
+                <h2 class="card-title"><i class="fas fa-robot"></i> Smart Consultant</h2>
+                <div id="wizard-step-1" class="wizard-step active">
+                    <h3 style="text-align:center;margin-bottom:20px;">What is your transport mode?</h3>
+                    <div class="options-grid">
+                        <div class="option-card" data-value="sea" onclick="selectWizardOption(this,1)"><div class="option-icon sea"><i class="fas fa-ship"></i></div><div class="option-title">Sea Transport</div></div>
+                        <div class="option-card" data-value="air" onclick="selectWizardOption(this,1)"><div class="option-icon air"><i class="fas fa-plane"></i></div><div class="option-title">Air Transport</div></div>
+                        <div class="option-card" data-value="road" onclick="selectWizardOption(this,1)"><div class="option-icon road"><i class="fas fa-truck"></i></div><div class="option-title">Road Transport</div></div>
+                        <div class="option-card" data-value="all" onclick="selectWizardOption(this,1)"><div class="option-icon all"><i class="fas fa-exchange-alt"></i></div><div class="option-title">Multimodal</div></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="nextWizardStep(1)" style="float:right;">Next →</button>
+                </div>
+                <div id="wizard-step-2" class="wizard-step">
+                    <h3 style="text-align:center;margin-bottom:20px;">What level of responsibility do you prefer (as seller)?</h3>
+                    <div class="options-grid">
+                        <div class="option-card" data-value="minimum" onclick="selectWizardOption(this,2)"><div class="option-icon sea"><i class="fas fa-home"></i></div><div class="option-title">Minimum</div><div class="option-description">Factory delivery only</div></div>
+                        <div class="option-card" data-value="port" onclick="selectWizardOption(this,2)"><div class="option-icon air"><i class="fas fa-anchor"></i></div><div class="option-title">Up to Origin Port</div></div>
+                        <div class="option-card" data-value="destination" onclick="selectWizardOption(this,2)"><div class="option-icon road"><i class="fas fa-map-marker-alt"></i></div><div class="option-title">Up to Destination</div></div>
+                        <div class="option-card" data-value="full" onclick="selectWizardOption(this,2)"><div class="option-icon all"><i class="fas fa-shield-alt"></i></div><div class="option-title">Full Responsibility</div></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <button class="btn btn-secondary" onclick="prevWizardStep(2)">← Back</button>
+                        <button class="btn btn-primary" onclick="nextWizardStep(2)">Next →</button>
+                    </div>
+                </div>
+                <div id="wizard-step-3" class="wizard-step">
+                    <h3 style="text-align:center;margin-bottom:20px;">Customs clearance capability?</h3>
+                    <div class="options-grid">
+                        <div class="option-card" data-value="none" onclick="selectWizardOption(this,3)"><div class="option-icon" style="background:#ef4444;"><i class="fas fa-times"></i></div><div class="option-title">None</div></div>
+                        <div class="option-card" data-value="exportOnly" onclick="selectWizardOption(this,3)"><div class="option-icon" style="background:#f59e0b;"><i class="fas fa-upload"></i></div><div class="option-title">Export Only</div></div>
+                        <div class="option-card" data-value="both" onclick="selectWizardOption(this,3)"><div class="option-icon" style="background:#10b981;"><i class="fas fa-exchange-alt"></i></div><div class="option-title">Both</div></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <button class="btn btn-secondary" onclick="prevWizardStep(3)">← Back</button>
+                        <button class="btn btn-primary" onclick="getRecommendation()">Get Recommendation</button>
+                    </div>
+                </div>
+                <div id="recommendation-result" class="recommendation-result">
+                    <div class="recommendation-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="recommendation-title" id="rec-code">FOB</div>
+                    <p id="rec-title" style="color:var(--gray);">Free On Board</p>
+                    <div class="recommendation-reasons"><div id="rec-reasons"></div></div>
+                    <button class="btn btn-primary btn-sm" onclick="restartWizard()" style="margin-top:16px;">New Consultation</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reference -->
+        <div class="main-content" id="reference-tab">
+            <div class="content-card">
+                <h2 class="card-title"><i class="fas fa-book"></i> Incoterms 2020 Reference (Demo: 6 of 11)</h2>
+                <div class="incoterms-reference" id="incotermsReference"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" style="display:none;"></div>
+
+    <script>
+        // Demo: 6 of 11 Incoterms
+        const incotermsData = [
+            { code:"EXW", title:"Ex Works", fullTitle:"Ex Works", transportMode:"all", transportName:"Any Mode", description:"Minimum seller responsibility. Buyer collects from seller's premises.", costStructure:{packaging:"seller",inlandTransportOrigin:"buyer",loading:"buyer",exportCustoms:"buyer",mainTransport:"buyer",insurance:"buyer",importCustoms:"buyer",inlandTransportDestination:"buyer"}, riskTransfer:"At seller's premises", whenToUse:["Buyer manages logistics","Domestic transactions"], tips:"Buyer must handle export clearance." },
+            { code:"FCA", title:"Free Carrier", fullTitle:"Free Carrier", transportMode:"all", transportName:"Any Mode", description:"Seller delivers to carrier nominated by buyer. Risk transfers at delivery.", costStructure:{packaging:"seller",inlandTransportOrigin:"seller",loading:"seller",exportCustoms:"seller",mainTransport:"buyer",insurance:"buyer",importCustoms:"buyer",inlandTransportDestination:"buyer"}, riskTransfer:"Upon delivery to carrier", whenToUse:["Containerized transport","Multimodal"], tips:"Specify delivery point precisely." },
+            { code:"FOB", title:"Free On Board", fullTitle:"Free On Board", transportMode:"sea", transportName:"Sea Transport", description:"Seller loads goods on board the vessel. Risk transfers once on board.", costStructure:{packaging:"seller",inlandTransportOrigin:"seller",loading:"seller",exportCustoms:"seller",mainTransport:"buyer",insurance:"buyer",importCustoms:"buyer",inlandTransportDestination:"buyer"}, riskTransfer:"When on board vessel", whenToUse:["Sea freight","Traditional maritime"], tips:"Not recommended for containers (use FCA)." },
+            { code:"CIF", title:"Cost, Insurance and Freight", fullTitle:"Cost, Insurance and Freight", transportMode:"sea", transportName:"Sea Transport", description:"Seller pays freight and insurance to destination port.", costStructure:{packaging:"seller",inlandTransportOrigin:"seller",loading:"seller",exportCustoms:"seller",mainTransport:"seller",insurance:"seller",importCustoms:"buyer",inlandTransportDestination:"buyer"}, riskTransfer:"When on board vessel", whenToUse:["Buyer lacks insurance knowledge","High-value goods"], tips:"Seller provides minimum insurance coverage." },
+            { code:"DAP", title:"Delivered at Place", fullTitle:"Delivered at Place", transportMode:"all", transportName:"Any Mode", description:"Seller delivers ready for unloading at named destination.", costStructure:{packaging:"seller",inlandTransportOrigin:"seller",loading:"seller",exportCustoms:"seller",mainTransport:"seller",insurance:"seller",importCustoms:"buyer",inlandTransportDestination:"seller"}, riskTransfer:"At destination (ready for unloading)", whenToUse:["Buyer wants goods at destination","Seller controls transport"], tips:"Import clearance is buyer's responsibility." },
+            { code:"DDP", title:"Delivered Duty Paid", fullTitle:"Delivered Duty Paid", transportMode:"all", transportName:"Any Mode", description:"Maximum seller responsibility. Delivered cleared for import.", costStructure:{packaging:"seller",inlandTransportOrigin:"seller",loading:"seller",exportCustoms:"seller",mainTransport:"seller",insurance:"seller",importCustoms:"seller",inlandTransportDestination:"seller"}, riskTransfer:"At final destination", whenToUse:["Inexperienced buyer","D2C sales"], tips:"Seller must understand destination customs rules." }
+        ];
+
+        let wizardStep = 1;
+        const wizardAnswers = {};
+
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.className = `toast ${type}`;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2500);
+        }
+
+        function calc() {
+            const fp = parseFloat(document.getElementById('factoryPrice').value)||0;
+            const costs = {
+                packaging: parseInt(document.getElementById('packagingCost').value),
+                inlandTransportOrigin: parseInt(document.getElementById('inlandTransport').value),
+                loading: 50,
+                exportCustoms: parseInt(document.getElementById('exportCustoms').value),
+                mainTransport: parseInt(document.getElementById('mainTransport').value),
+                insurance: parseInt(document.getElementById('insuranceCost').value),
+                importCustoms: parseInt(document.getElementById('importCustoms').value),
+                inlandTransportDestination: 150
+            };
+            const mode = document.getElementById('transportMode').value;
+            const filtered = incotermsData.filter(t => t.transportMode === 'all' || t.transportMode === mode);
+            const results = filtered.map(term => {
+                let seller = fp, buyer = 0;
+                for (const [key, val] of Object.entries(costs)) {
+                    if (term.costStructure[key] === 'seller') seller += val;
+                    else buyer += val;
+                }
+                const total = seller + buyer - fp;
+                const sp = total > 0 ? Math.round((seller-fp)/total*100) : 0;
+                return { code: term.code, title: term.title, price: seller, sellerPercent: sp, buyerPercent: 100-sp };
+            });
+            results.sort((a,b) => a.price - b.price);
+            document.getElementById('priceResults').innerHTML = results.map(r => `
+                <div class="result-card"><div class="result-code">${r.code}</div><div class="result-title">${r.title}</div><div class="result-price">$${r.price.toLocaleString()}</div><div><span class="seller-badge">Seller: ${r.sellerPercent}%</span> <span class="buyer-badge">Buyer: ${r.buyerPercent}%</span></div></div>
+            `).join('');
+        }
+
+        function selectWizardOption(el, step) {
+            el.parentElement.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            wizardAnswers[`q${step}`] = el.dataset.value;
+        }
+
+        function nextWizardStep(s) {
+            if (!wizardAnswers[`q${s}`]) return showToast('Select an option', 'warning');
+            document.getElementById(`wizard-step-${s}`).classList.remove('active');
+            wizardStep = s + 1;
+            document.getElementById(`wizard-step-${wizardStep}`).classList.add('active');
+        }
+
+        function prevWizardStep(s) {
+            document.getElementById(`wizard-step-${s}`).classList.remove('active');
+            wizardStep = s - 1;
+            document.getElementById(`wizard-step-${wizardStep}`).classList.add('active');
+        }
+
+        function getRecommendation() {
+            if (!wizardAnswers.q3) return showToast('Select an option', 'warning');
+            let code = 'EXW', reasons = ['Based on your selections'];
+            if (wizardAnswers.q1 === 'sea' && wizardAnswers.q2 === 'port') { code = 'FOB'; reasons = ['Sea transport','Port-level responsibility','You handle export customs']; }
+            else if (wizardAnswers.q1 === 'sea' && wizardAnswers.q2 === 'destination') { code = 'CIF'; reasons = ['Sea transport','Destination responsibility','Insurance included']; }
+            else if (wizardAnswers.q2 === 'minimum') { code = 'EXW'; reasons = ['Minimum responsibility','Buyer manages all']; }
+            else if (wizardAnswers.q2 === 'full') { code = 'DDP'; reasons = ['Full responsibility','Maximum buyer service']; }
+            else { code = 'FCA'; reasons = ['Flexible delivery','Multimodal compatible']; }
+
+            document.getElementById('wizard-step-3').classList.remove('active');
+            document.getElementById('recommendation-result').classList.add('active');
+            const term = incotermsData.find(t => t.code === code);
+            document.getElementById('rec-code').textContent = code;
+            document.getElementById('rec-title').textContent = term ? term.fullTitle : code;
+            document.getElementById('rec-reasons').innerHTML = reasons.map(r => `<div class="reason-item"><span class="reason-icon">✅</span> ${r}</div>`).join('');
+        }
+
+        function restartWizard() {
+            wizardStep = 1; ['q1','q2','q3'].forEach(k => delete wizardAnswers[k]);
+            document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('wizard-step-1').classList.add('active');
+            document.getElementById('recommendation-result').classList.remove('active');
+            document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+        }
+
+        function loadReference() {
+            document.getElementById('incotermsReference').innerHTML = incotermsData.map(term => `
+                <div class="incoterm-detail-card">
+                    <div class="detail-code ${term.transportMode}">${term.code}</div>
+                    <h3 style="font-weight:800;margin-bottom:4px;">${term.fullTitle}</h3>
+                    <p style="color:var(--gray);font-size:0.8rem;margin-bottom:10px;">${term.transportName}</p>
+                    <p style="color:var(--gray);font-size:0.9rem;margin-bottom:12px;">${term.description}</p>
+                    ${Object.entries(term.costStructure).slice(0,6).map(([k,v]) => `<div class="chart-item"><span>${k.replace(/([A-Z])/g,' $1').trim()}</span><span class="chart-responsibility ${v}">${v==='seller'?'Seller':'Buyer'}</span></div>`).join('')}
+                    <p style="font-size:0.75rem;color:var(--warning);margin-top:10px;"><strong>⚠️ Risk Transfer:</strong> ${term.riskTransfer}</p>
+                </div>
+            `).join('');
+        }
+
+        document.querySelectorAll('.main-tab').forEach(t => {
+            t.addEventListener('click', function() {
+                document.querySelectorAll('.main-tab').forEach(x => x.classList.remove('active'));
+                document.querySelectorAll('.main-content').forEach(x => x.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab+'-tab').classList.add('active');
+            });
+        });
+
+        document.getElementById('factoryPrice').addEventListener('input', calc);
+        calc();
+        loadReference();
+
+        document.addEventListener('contextmenu', e => { e.preventDefault(); alert('⛔ Demo version. Purchase at digitalyar.company'); });
+        document.addEventListener('keydown', e => { if ((e.ctrlKey&&e.key==='s')||e.key==='F12') e.preventDefault(); });
+    </script>
+</body>
+</html>
